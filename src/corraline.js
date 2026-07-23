@@ -1814,7 +1814,13 @@ const userQuestion = ($('When chat message received').item.json.chatInput || '')
 const regressionKeywords = ['etkiliyor', 'etkisi', 'ne kadar etki', 'tahmin ed', 'artırıyor', 'azaltıyor', 'nasıl değişir', 'etkili mi'];
 const questionSuggestsRegression = regressionKeywords.some(kw => userQuestion.includes(kw));
 
-const isRegression = !isChiSquare && (testType.includes('regresyon') || testType.includes('regression') || (questionSuggestsRegression && secondVar && secondVar.trim() !== '' && depVarIsCategorical === secondVarIsCategorical));
+// AI "regresyon" dese bile, diğer dallardaki (isActuallyGroupComparison, isChiSquare, isPaired)
+// gibi burada da gerçek tip kontrolü yapılıyor: regresyon SADECE her iki değişken de
+// gerçekten sayısalsa uygulanıyor. Aksi halde (örn. AI bir kategorik/aralık-etiketli
+// değişkeni yanlışlıkla "sürekli/sayısal" sanmışsa) bu dala hiç girilmiyor, akış
+// isActuallyGroupComparison'a düşerek doğru şekilde grup karşılaştırmasına yönleniyor.
+const regressionVarsBothNumeric = depVarSample && secondVarSample && depVarIsCategorical === false && secondVarIsCategorical === false;
+const isRegression = !isChiSquare && regressionVarsBothNumeric && (testType.includes('regresyon') || testType.includes('regression') || questionSuggestsRegression);
 const bagimsizDegiskenlerRaw = decision.bagimsiz_degiskenler || [];
 const bagimsizDegiskenler = bagimsizDegiskenlerRaw
   .map(item => {
