@@ -152,6 +152,12 @@ function toNumber(v) {
     // Sadece virgül varsa: ondalık ayracı (örn. "5,5")
     s = s.replace(',', '.');
   }
+  // KRİTİK: parseFloat bir string'in SADECE başındaki rakamları okuyup gerisini
+  // sessizce görmezden gelir (örn. parseFloat("0-6ay") === 0). Bu, "0-6 ay",
+  // "18-25 yaş" gibi ARALIK ETİKETLİ KATEGORİK değişkenlerin yanlışlıkla sayısal
+  // sanılmasına yol açar. Bunu önlemek için string'in TAMAMININ geçerli bir sayı
+  // biçiminde olmasını zorunlu kılıyoruz; aksi halde NaN dönüyoruz.
+  if (!/^-?\d+(\.\d+)?$/.test(s)) return NaN;
   return parseFloat(s);
 }
 function normalizeCategory(v) {
