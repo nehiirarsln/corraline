@@ -1500,11 +1500,30 @@ const likertMap = {
   'çok kötü': 1, 'kötü': 2, 'orta': 3, 'iyi': 4, 'çok iyi': 5,
   'biliyorum': 2, 'bilmiyorum': 1, 'yorumum yok': 0
 };
+// Her likertMap anahtarının ait olduğu ölçeğin TEORİK (gözlemlenen değil, sözlüğün
+// kendisinden bilinen) min/max sınırı. reverseScaleColumn bu sınırları kullanabildiğinde
+// veri setinde skalanın uç noktalarının hiç seçilmemiş olması gibi bir durumdan
+// etkilenmeden doğru ters kodlama yapabilir.
+const likertScaleBounds = {
+  'kesinlikle katılmıyorum': [1, 5], 'hiç katılmıyorum': [1, 5],
+  'katılmıyorum': [1, 5],
+  'kararsızım': [1, 5], 'ne katılıyorum ne katılmıyorum': [1, 5], 'fikrim yok': [1, 5],
+  'katılıyorum': [1, 5],
+  'kesinlikle katılıyorum': [1, 5], 'tamamen katılıyorum': [1, 5],
+  'hiç memnun değilim': [1, 5], 'kesinlikle memnun değilim': [1, 5],
+  'memnun değilim': [1, 5],
+  'memnunum': [1, 5],
+  'çok memnunum': [1, 5], 'kesinlikle memnunum': [1, 5],
+  'hiçbir zaman': [1, 5], 'nadiren': [1, 5], 'bazen': [1, 5], 'sık sık': [1, 5], 'her zaman': [1, 5],
+  'çok kötü': [1, 5], 'kötü': [1, 5], 'orta': [1, 5], 'iyi': [1, 5], 'çok iyi': [1, 5],
+  'biliyorum': [0, 2], 'bilmiyorum': [0, 2], 'yorumum yok': [0, 2]
+};
 function convertLikertColumns(rawRows) {
-  if (rawRows.length === 0) return { rows: rawRows, warnings: [] };
+  if (rawRows.length === 0) return { rows: rawRows, warnings: [], scaleBounds: {} };
   const columns = Object.keys(rawRows[0]);
   const convertedRows = rawRows.map(r => ({ ...r }));
   const warnings = [];
+  const scaleBounds = {};
 
   for (const col of columns) {
     const values = rawRows.map(r => r[col]).filter(v => v !== undefined && v !== null && v !== '');
@@ -1516,37 +1535,54 @@ function convertLikertColumns(rawRows) {
     const matchCount = values.filter(v => likertMap[String(v).toLowerCase().trim()] !== undefined).length;
     if (matchCount / values.length >= 0.8) {
       let unmatchedCount = 0;
+      let colMin = null, colMax = null;
       for (const row of convertedRows) {
         const val = row[col];
         if (val !== undefined && val !== null && val !== '') {
-          const mapped = likertMap[String(val).toLowerCase().trim()];
+          const key = String(val).toLowerCase().trim();
+          const mapped = likertMap[key];
           if (mapped !== undefined) {
             row[col] = mapped;
+            const bounds = likertScaleBounds[key];
+            if (bounds) {
+              colMin = colMin === null ? bounds[0] : Math.min(colMin, bounds[0]);
+              colMax = colMax === null ? bounds[1] : Math.max(colMax, bounds[1]);
+            }
           } else {
             row[col] = null;
             unmatchedCount++;
           }
         }
       }
+      if (colMin !== null && colMax !== null) {
+        scaleBounds[col] = [colMin, colMax];
+      }
       if (unmatchedCount > 0) {
         warnings.push(`"${col}" sütununda ${unmatchedCount} değer tanınan Likert ifadeleriyle eşleşmedi, bu satırlar bu sütun için analiz dışı bırakıldı.`);
       }
     }
   }
-  return { rows: convertedRows, warnings };
+  return { rows: convertedRows, warnings, scaleBounds };
 }
-function reverseScaleColumn(rawRows, colName) {
-  // NOT: scaleMin/scaleMax veri setindeki GÖZLEMLENEN min/max değerine dayanır, ölçeğin
-  // teorik sınırına değil. Eğer katılımcılar ölçeğin bir ucunu (örn. 1-5'lik skalada hiç
-  // "1") hiç seçmemişse, ters kodlama yanlış aralığa göre hesaplanır. Bu, AI Agent'ın karar
-  // objesine ölçeğin gerçek teorik sınırlarını (min/max) da eklemesi sağlanmadan bu dosya
-  // içinde tam olarak giderilemeyen bilinen bir sınırlamadır.
-  const values = rawRows.map(r => toNumber(r[colName])).filter(v => !isNaN(v));
-  if (values.length === 0) return rawRows;
-  const scaleMin = Math.min(...values);
-  const scaleMax = Math.max(...values);
+function reverseScaleColumn(rawRows, colName, theoreticalBounds) {
+  let scaleMin, scaleMax, usedTheoretical;
+  if (theoreticalBounds && theoreticalBounds[colName]) {
+    // Likert sözlüğünden dönüştürülmüş bir sütun: gerçek/teorik skala sınırı biliniyor,
+    // veri setinde uç noktaların gözlemlenip gözlemlenmediğinden bağımsız olarak doğru.
+    [scaleMin, scaleMax] = theoreticalBounds[colName];
+    usedTheoretical = true;
+  } else {
+    // Teorik sınır bilinmiyor (sütun zaten sayısal girilmiş, Likert sözlüğünden geçmemiş):
+    // veri setindeki gözlemlenen min/max kullanılıyor. Katılımcılar skalanın bir ucunu
+    // (örn. en düşük puanı) hiç seçmemişse bu yanlış ters kodlamaya yol açabilir.
+    const values = rawRows.map(r => toNumber(r[colName])).filter(v => !isNaN(v));
+    if (values.length === 0) return { rows: rawRows, usedTheoretical: false, warning: null };
+    scaleMin = Math.min(...values);
+    scaleMax = Math.max(...values);
+    usedTheoretical = false;
+  }
 
-  return rawRows.map(row => {
+  const rows = rawRows.map(row => {
     const newRow = { ...row };
     const val = toNumber(row[colName]);
     if (!isNaN(val)) {
@@ -1554,6 +1590,12 @@ function reverseScaleColumn(rawRows, colName) {
     }
     return newRow;
   });
+
+  const warning = usedTheoretical
+    ? null
+    : `"${colName}" sütunu ters kodlanırken skalanın teorik sınırı bilinmediği için veri setindeki gözlemlenen min (${scaleMin}) - maks (${scaleMax}) değerleri kullanıldı. Katılımcılar skalanın gerçek uç noktalarından birini hiç seçmemişse bu ters kodlama hatalı olabilir.`;
+
+  return { rows, usedTheoretical, warning };
 }
 function createCompositeScore(rawRows, items, newColName) {
   let excludedCount = 0;
@@ -1578,6 +1620,7 @@ try {
 const likertResult = convertLikertColumns(rawRows);
 rawRows = likertResult.rows;
 const likertWarnings = likertResult.warnings;
+const likertScaleBoundsMap = likertResult.scaleBounds;
 
 const columnNames = rawRows.length > 0 ? Object.keys(rawRows[0]) : [];
 // REVERSE:iki nokta üst üsteden sonra boşluk olsa da olmasa da yakalar; sütun adını
@@ -1588,7 +1631,11 @@ const reverseMatches = decision.gerekce ? [...decision.gerekce.matchAll(/REVERSE
 for (const match of reverseMatches) {
   const reverseCol = extractColumnNames(match[1], columnNames)[0];
   if (reverseCol) {
-    rawRows = reverseScaleColumn(rawRows, reverseCol);
+    const reverseResult = reverseScaleColumn(rawRows, reverseCol, likertScaleBoundsMap);
+    rawRows = reverseResult.rows;
+    if (reverseResult.warning) {
+      likertWarnings.push(reverseResult.warning);
+    }
   }
 }
 const endeksMaddeleriRaw = decision.endeks_maddeleri || [];
