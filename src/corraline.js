@@ -1783,6 +1783,7 @@ if (isChitchat) {
     analiz_turu: "cronbach_alpha",
     onerilen_test_ai: decision.onerilen_test,
     uygulanan_test: "cronbach-alpha",
+    override_aciklamasi: null,
     maddeler: items,
     gerekce: decision.gerekce,
     sonuc: result
@@ -1874,6 +1875,7 @@ const grafikUrl = generateBarChartUrl(chartLabels, chartValues, `${categoricalVa
     analiz_turu: "lojistik_regresyon",
     onerilen_test_ai: decision.onerilen_test,
     uygulanan_test: "lojistik-regresyon",
+    override_aciklamasi: null,
     bagimli_degisken: depVar,
     bagimsiz_degiskenler: bagimsizDegiskenler,
     gerekce: decision.gerekce,
@@ -1887,6 +1889,7 @@ const grafikUrl = generateBarChartUrl(chartLabels, chartValues, `${categoricalVa
     analiz_turu: "coklu_regresyon",
     onerilen_test_ai: decision.onerilen_test,
     uygulanan_test: "coklu-dogrusal-regresyon",
+    override_aciklamasi: null,
     bagimli_degisken: depVar,
     bagimsiz_degiskenler: bagimsizDegiskenler,
     gerekce: decision.gerekce,
