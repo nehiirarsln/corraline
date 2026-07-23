@@ -1623,6 +1623,33 @@ const likertWarnings = likertResult.warnings;
 const likertScaleBoundsMap = likertResult.scaleBounds;
 
 const columnNames = rawRows.length > 0 ? Object.keys(rawRows[0]) : [];
+
+// AI Agent, zaten sayısal girilmiş (metin-Likert sözlüğünden geçmemiş) bir sütunun
+// gerçek teorik skalasını "SCALE:sütun_adı:min-max" şeklinde belirtebilir (örn. "SCALE:puan:1-7").
+// Bu bilgi köre güvenilmiyor: veri setindeki gerçek değerler bu aralığın dışına taşıyorsa
+// (AI'nin belirttiği skala veriyle çelişiyorsa) kullanılmıyor, bunun yerine ne olduğu açıkça
+// uyarı olarak raporlanıyor ve gözlemlenen min/max'a düşülüyor.
+const scaleMatches = decision.gerekce ? [...decision.gerekce.matchAll(/SCALE:\s*([^,;\n:]+):\s*(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)/g)] : [];
+const aiScaleBoundsMap = {};
+for (const m of scaleMatches) {
+  const claimedMin = parseFloat(m[2]);
+  const claimedMax = parseFloat(m[3]);
+  const col = extractColumnNames(m[1].trim(), columnNames)[0];
+  if (!col || isNaN(claimedMin) || isNaN(claimedMax) || claimedMin >= claimedMax) continue;
+  const observedValues = rawRows.map(r => toNumber(r[col])).filter(v => !isNaN(v));
+  const observedMin = observedValues.length ? Math.min(...observedValues) : null;
+  const observedMax = observedValues.length ? Math.max(...observedValues) : null;
+  if (observedMin !== null && (observedMin < claimedMin || observedMax > claimedMax)) {
+    likertWarnings.push(`AI Agent "${col}" sütunu için ${claimedMin}-${claimedMax} arası bir ölçek belirtti, ama veri setinde bu aralığın dışında değerler bulundu (gözlemlenen: ${observedMin}-${observedMax}). Belirtilen skala sınırı güvenilir bulunmadığı için ters kodlamada kullanılmadı, bunun yerine gözlemlenen min/max değerleri kullanıldı.`);
+    continue;
+  }
+  aiScaleBoundsMap[col] = [claimedMin, claimedMax];
+}
+// Öncelik sırası: Likert sözlüğünden (metinden) çıkan sınır her zaman en güvenilir olduğu
+// için AI'nin belirttiği sınırın üzerine yazılır; AI'nin sınırı sadece sözlükten bilgi
+// gelmeyen (zaten sayısal) sütunlar için kullanılır.
+const combinedScaleBounds = { ...aiScaleBoundsMap, ...likertScaleBoundsMap };
+
 // REVERSE:iki nokta üst üsteden sonra boşluk olsa da olmasa da yakalar; sütun adını
 // sadece bir sonraki virgül/noktalı virgül/satır sonuna kadar keser (tek kelimede
 // durup çok kelimeli sütun adlarını kaçırmaz), extractColumnNames zaten bu metin
@@ -1631,7 +1658,7 @@ const reverseMatches = decision.gerekce ? [...decision.gerekce.matchAll(/REVERSE
 for (const match of reverseMatches) {
   const reverseCol = extractColumnNames(match[1], columnNames)[0];
   if (reverseCol) {
-    const reverseResult = reverseScaleColumn(rawRows, reverseCol, likertScaleBoundsMap);
+    const reverseResult = reverseScaleColumn(rawRows, reverseCol, combinedScaleBounds);
     rawRows = reverseResult.rows;
     if (reverseResult.warning) {
       likertWarnings.push(reverseResult.warning);
