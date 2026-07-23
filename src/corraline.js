@@ -1822,6 +1822,7 @@ const questionSuggestsRegression = regressionKeywords.some(kw => userQuestion.in
 const regressionVarsBothNumeric = depVarSample && secondVarSample && depVarIsCategorical === false && secondVarIsCategorical === false;
 const isRegression = !isChiSquare && regressionVarsBothNumeric && (testType.includes('regresyon') || testType.includes('regression') || questionSuggestsRegression);
 const bagimsizDegiskenlerRaw = decision.bagimsiz_degiskenler || [];
+const excludedCategoricalIndepVars = [];
 const bagimsizDegiskenler = bagimsizDegiskenlerRaw
   .map(item => {
     const matches = extractColumnNames(String(item), columnNames);
@@ -1830,8 +1831,21 @@ const bagimsizDegiskenler = bagimsizDegiskenlerRaw
   .filter(v => {
     if (!v || !columnNames.includes(v)) return false;
     const sample = rawRows.find(r => r[v] !== undefined && r[v] !== null && r[v] !== '');
-    return sample && isColumnMostlyNumeric(rawRows, v) === true;
+    if (!sample) return false;
+    const isNumeric = isColumnMostlyNumeric(rawRows, v) === true;
+    if (!isNumeric) {
+      // Kategorik bir değişken bağımsız değişken listesine dahil edilmeye çalışılmış:
+      // çoklu/lojistik regresyon fonksiyonları sadece sayısal girdiyle çalışabildiği
+      // için bu değişken atlanıyor. Bunu sessizce yapmak yerine kullanıcıya açıkça
+      // bildiriyoruz — aksi halde kullanıcı bu değişkenin analize dahil edildiğini sanabilir.
+      excludedCategoricalIndepVars.push(v);
+      return false;
+    }
+    return true;
   });
+if (excludedCategoricalIndepVars.length > 0) {
+  likertWarnings.push(`Şu değişken(ler) kategorik olduğu için regresyon analizine dahil edilemedi ve analiz dışı bırakıldı: ${excludedCategoricalIndepVars.join(', ')}. Bu değişken(ler)in etkisini incelemek için ayrı bir grup karşılaştırması (örn. ANOVA/t-test) yapılması önerilir.`);
+}
 const isMultipleRegression = testType.includes('coklu-regresyon') || testType.includes('multiple-regression') || bagimsizDegiskenler.length >= 2;
 
 const pairedKeywords = ['öncesi', 'oncesi', 'sonrası', 'sonrasi', 'öncesinde', 'sonrasında', 'değişti mi', 'degisti mi', 'fark var mı', 'fark var mi'];
