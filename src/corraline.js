@@ -1970,7 +1970,7 @@ const grafikUrl = generateBarChartUrl(chartLabels, chartValues, `${categoricalVa
 
 } else if (isLogistic) {
   const result = logisticRegression(rawRows, depVar, bagimsizDegiskenler);
-  const grafikUrl = generateCoefficientChartUrl(result.katsayilar, `${depVar} için Lojistik Regresyon Katsayıları`, 'Katsayı (B)');
+  const grafikUrl = result.error ? null : generateCoefficientChartUrl(result.katsayilar, `${depVar} için Lojistik Regresyon Katsayıları`, 'Katsayı (B)');
   output = {
     analiz_turu: "lojistik_regresyon",
     onerilen_test_ai: decision.onerilen_test,
@@ -1984,7 +1984,7 @@ const grafikUrl = generateBarChartUrl(chartLabels, chartValues, `${categoricalVa
   };
 } else if (isMultipleRegression) {
   const result = multipleLinearRegression(rawRows, depVar, bagimsizDegiskenler);
-  const grafikUrl = generateCoefficientChartUrl(result.katsayilar, `${depVar} için Regresyon Katsayıları`, 'Katsayı Değeri');
+  const grafikUrl = result.error ? null : generateCoefficientChartUrl(result.katsayilar, `${depVar} için Regresyon Katsayıları`, 'Katsayı Değeri');
   output = {
     analiz_turu: "coklu_regresyon",
     onerilen_test_ai: decision.onerilen_test,
@@ -2026,7 +2026,7 @@ const grafikUrl = generateBarChartUrl(chartLabels, chartValues, `${categoricalVa
   };
 } else if (isChiSquare) {
   const result = chiSquareIndependence(rawRows, depVar, secondVar);
-  const grafikUrl = generateGroupedBarChartUrl(result.row_categories, result.col_categories, result.observed_frequencies, `${depVar} ve ${secondVar} Dağılımı`);
+  const grafikUrl = result.error ? null : generateGroupedBarChartUrl(result.row_categories, result.col_categories, result.observed_frequencies, `${depVar} ve ${secondVar} Dağılımı`);
 
   output = {
     analiz_turu: "ki-kare",
@@ -2043,7 +2043,7 @@ const grafikUrl = generateBarChartUrl(chartLabels, chartValues, `${categoricalVa
  const secondVarFinal = secondVar;
   const pairs = pairColumns(rawRows, secondVarFinal, depVar);
   const result = simpleLinearRegression(pairs);
-  const grafikUrl = generateScatterPlotUrl(pairs, secondVarFinal, depVar, `${secondVarFinal} ile ${depVar} İlişkisi`, { intercept: result.intercept, slope: result.slope });
+  const grafikUrl = generateScatterPlotUrl(pairs, secondVarFinal, depVar, `${secondVarFinal} ile ${depVar} İlişkisi`, result.error ? null : { intercept: result.intercept, slope: result.slope });
 
   output = {
     analiz_turu: "regresyon",
