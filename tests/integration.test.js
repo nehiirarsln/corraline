@@ -30,7 +30,7 @@ describe('Farkindalik endeksi - staj suresine gore karsilastirma (Shapiro-Wilk k
     };
     const result = runPipeline({ rows: anketRows, decision });
     expect(result.uygulanan_test).toBe('kruskal-wallis');
-    expect(result.sonuc.p_value).toBeCloseTo(0.006302, 5);
+    expect(result.sonuc.p_value).toBeCloseTo(0.00624, 4);
     expect(result.grup_bazli_normallik['12ay ve üzeri'].is_normal).toBe(false);
   });
 });

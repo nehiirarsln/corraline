@@ -260,6 +260,20 @@ function kruskalWallis(groups) {
   }
 
   H = (12 / (N * (N + 1))) * H - 3 * (N + 1);
+
+  // Bağlı değer (tie) düzeltmesi: standart Kruskal-Wallis formülü, veride
+  // aynı değere sahip birden fazla gözlem (tie) varsa H istatistiğinin bu
+  // düzeltme faktörüyle bölünmesini gerektirir. Bu adım eksikse (önceki halde
+  // olduğu gibi) H sistematik olarak hafif düşük çıkar — Likert/anket
+  // verisinde bağlı değerler istisna değil kural olduğu için bu proje için
+  // özellikle önemli. scipy.stats.kruskal ile doğrulandı.
+  const tieGroups = {};
+  for (const r of ranks) tieGroups[r.value] = (tieGroups[r.value] || 0) + 1;
+  let tieSum = 0;
+  for (const t of Object.values(tieGroups)) tieSum += (Math.pow(t, 3) - t);
+  const tieCorrection = 1 - tieSum / (Math.pow(N, 3) - N);
+  if (tieCorrection > 0) H = H / tieCorrection;
+
   const df = k - 1;
   const pValue = chiSquarePValue(H, df);
 
