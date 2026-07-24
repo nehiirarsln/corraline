@@ -1,0 +1,12 @@
+{
+  "name": "corraline",
+  "version": "1.0.0",
+  "description": "n8n icin gelistirilen, SPSS tarzi istatistiksel analiz motoru (t-test, ANOVA, korelasyon, regresyon, ki-kare, lojistik regresyon, Cronbach's Alpha, Shapiro-Wilk normallik testi). Likert olcek donusumu ve endeks/composite skor olusturma destekli.",
+  "main": "src/corraline.js",
+  "scripts": {
+    "test": "jest --runInBand"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
