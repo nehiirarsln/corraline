@@ -1225,13 +1225,178 @@ function durbinWatsonTest(residuals) {
 }
 
 // ============================================================
+// SHAPIRO-WILK TESTİ (Royston 1995, AS R94)
+// Kaynak: Matrix Science Mascot Parser toolkit'in AS R94 C++ portu
+// (http://www.matrixscience.com/msparser/help/group___shapiro_wilk_source_code.html),
+// scipy.stats.shapiro ile 7 farklı örneklem büyüklüğünde (n=4,8,15,20,30,50,100)
+// ve gerçek anket verisiyle birebir doğrulandı.
+// ============================================================
+
+function ppnd7(p) {
+  const half=0.5, split1=0.425, split2=5.0, const1=0.180625, const2=1.6;
+  const a0=3.3871327179e0, a1=5.0434271938e1, a2=1.5929113202e2, a3=5.9109374720e1;
+  const b1=1.7895169469e1, b2=7.8757757664e1, b3=6.7187563600e1;
+  const c0=1.4234372777e0, c1=2.7568153900e0, c2=1.3067284816e0, c3=1.7023821103e-1;
+  const d1=7.3700164250e-1, d2=1.2021132975e-1;
+  const e0=6.6579051150e0, e1=3.0812263860e0, e2=4.2868294337e-1, e3=1.7337203997e-2;
+  const f1=2.4197894225e-1, f2=1.2258202635e-2;
+  const q = p - half;
+  let r, val;
+  if (Math.abs(q) <= split1) {
+    r = const1 - q*q;
+    return q*(((a3*r+a2)*r+a1)*r+a0)/(((b3*r+b2)*r+b1)*r+1);
+  } else {
+    r = q < 0 ? p : 1 - p;
+    if (r <= 0) return 0;
+    r = Math.sqrt(-Math.log(r));
+    if (r <= split2) {
+      r = r - const2;
+      val = (((c3*r+c2)*r+c1)*r+c0)/((d2*r+d1)*r+1);
+    } else {
+      r = r - split2;
+      val = (((e3*r+e2)*r+e1)*r+e0)/((f2*r+f1)*r+1);
+    }
+    return q < 0 ? -val : val;
+  }
+}
+
+function alnorm(x, upper) {
+  const con=1.28, ltone=7.0, utzero=18.66;
+  const p=0.398942280444, q=0.39990348504, r=0.398942280385;
+  const a1=5.75885480458, a2=2.62433121679, a3=5.92885724438;
+  const b1=-29.8213557807, b2=48.6959930692;
+  const c1=-3.8052e-8, c2=3.98064794e-4, c3=-0.151679116635, c4=4.8385912808, c5=0.742380924027, c6=3.99019417011;
+  const d1=1.00000615302, d2=1.98615381364, d3=5.29330324926, d4=-15.1508972451, d5=30.789933034;
+  let up = upper, z = x, y, res;
+  if (z < 0) { up = !up; z = -z; }
+  if (z <= ltone || (up && z <= utzero)) {
+    y = 0.5*z*z;
+    if (z > con) {
+      res = r*Math.exp(-y)/(z+c1+d1/(z+c2+d2/(z+c3+d3/(z+c4+d4/(z+c5+d5/(z+c6))))));
+    } else {
+      res = 0.5 - z*(p - q*y/(y+a1+b1/(y+a2+b2/(y+a3))));
+    }
+  } else {
+    res = 0;
+  }
+  return up ? res : 1 - res;
+}
+
+function swPoly(cc, x) {
+  let p = cc[cc.length-1];
+  for (let j = cc.length-2; j >= 0; j--) p = p*x + cc[j];
+  return p;
+}
+
+function swSign(x, y) { return y < 0 ? -Math.abs(x) : Math.abs(x); }
+
+function shapiroWilk(xIn) {
+  const n = xIn.length;
+  if (n < 3) return { error: "Shapiro-Wilk testi için en az 3 gözlem gerekli" };
+  if (n > 5000) return { error: "Shapiro-Wilk testi n>5000 için tanımlı değil" };
+  const x = [...xIn].sort((a,b)=>a-b);
+  const nn2 = Math.floor(n/2);
+  const an = n;
+  const a = new Array(nn2+1).fill(0);
+
+  if (n === 3) {
+    a[1] = 0.70711;
+  } else {
+    const an25 = an + 0.25;
+    let summ2 = 0;
+    const c1_ = [0,.221157,-.147981,-2.07119,4.434685,-2.706056];
+    const c2_ = [0,.042981,-.293762,-1.752461,5.682633,-3.582633];
+    for (let i=1; i<=nn2; i++) {
+      a[i] = ppnd7((i - 0.375)/an25);
+      summ2 += a[i]*a[i];
+    }
+    summ2 *= 2;
+    const ssumm2 = Math.sqrt(summ2);
+    const rsn = 1/Math.sqrt(an);
+    const a1_ = swPoly(c1_, rsn) - a[1]/ssumm2;
+    let i1, fac;
+    if (n > 5) {
+      i1 = 3;
+      const a2_ = -a[2]/ssumm2 + swPoly(c2_, rsn);
+      fac = Math.sqrt((summ2 - 2*a[1]*a[1] - 2*a[2]*a[2]) / (1 - 2*a1_*a1_ - 2*a2_*a2_));
+      a[2] = a2_;
+    } else {
+      i1 = 2;
+      fac = Math.sqrt((summ2 - 2*a[1]*a[1]) / (1 - 2*a1_*a1_));
+    }
+    a[1] = a1_;
+    for (let i=i1; i<=nn2; i++) a[i] = a[i] / (-fac);
+  }
+
+  const range = x[n-1] - x[0];
+  if (range < 1e-19) return { error: "Değişken sabit (tüm değerler aynı), Shapiro-Wilk testi hesaplanamaz" };
+  let xx = x[0]/range;
+  let sx = xx;
+  let sa = -a[1];
+  let j = n - 1;
+  for (let i=2; i<=n; i++) {
+    const xi = x[i-1]/range;
+    sx += xi;
+    if (i !== j) sa += swSign(1, i-j) * a[Math.min(i,j)];
+    xx = xi;
+    j--;
+  }
+  sa /= n;
+  sx /= n;
+
+  let ssa=0, ssx=0, sax=0;
+  j = n;
+  for (let i=1; i<=n; i++) {
+    let asa;
+    if (i !== j) asa = swSign(1, i-j) * a[Math.min(i,j)] - sa;
+    else asa = -sa;
+    const xsx = x[i-1]/range - sx;
+    ssa += asa*asa;
+    ssx += xsx*xsx;
+    sax += asa*xsx;
+    j--;
+  }
+  const ssassx = Math.sqrt(ssa*ssx);
+  const w1 = (ssassx - sax)*(ssassx + sax) / (ssa*ssx);
+  const w = 1 - w1;
+
+  let pw;
+  if (n === 3) {
+    const pi6 = 1.909859, stqr = 1.047198;
+    pw = pi6 * (Math.asin(Math.sqrt(w)) - stqr);
+    return { W: Number(w.toFixed(6)), p: pw };
+  }
+
+  let y = Math.log(w1);
+  const lnn = Math.log(an);
+  const g_ = [-2.273, .459];
+  const c3_ = [.544,-.39978,.025054,-6.714e-4];
+  const c4_ = [1.3822,-.77857,.062767,-.0020322];
+  const c5_ = [-1.5861,-.31082,-.083751,.0038915];
+  const c6_ = [-.4803,-.082676,.0030302];
+  let m, s;
+  if (n <= 11) {
+    const gamma = swPoly(g_, an);
+    if (y >= gamma) return { W: Number(w.toFixed(6)), p: 1e-19 };
+    y = -Math.log(gamma - y);
+    m = swPoly(c3_, an);
+    s = Math.exp(swPoly(c4_, an));
+  } else {
+    m = swPoly(c5_, lnn);
+    s = Math.exp(swPoly(c6_, lnn));
+  }
+  pw = alnorm((y - m)/s, true);
+  return { W: Number(w.toFixed(6)), p: pw };
+}
+
+// ============================================================
 // GRUP-BAZLI NORMALLİK TESTİ
 // ============================================================
 
 function groupNormality(values) {
   const n = values.length;
-  if (n < 8) {
-    return { p_value: null, is_normal: null, note: "Grup çok küçük (n<8), normallik güvenilir test edilemedi" };
+  if (n < 3) {
+    return { p_value: null, is_normal: null, note: "Grup çok küçük (n<3), normallik test edilemedi" };
   }
 
   const groupMean = mean(values);
@@ -1242,15 +1407,19 @@ function groupNormality(values) {
   const skewness = values.reduce((sum, v) => sum + Math.pow((v - groupMean) / std, 3), 0) / n;
   const kurtosis = values.reduce((sum, v) => sum + Math.pow((v - groupMean) / std, 4), 0) / n;
   const excessKurtosis = kurtosis - 3;
-  const jbStatistic = (n / 6) * (Math.pow(skewness, 2) + (Math.pow(excessKurtosis, 2) / 4));
-  const pValue = chiSquarePValue(jbStatistic, 2);
+
+  const swResult = shapiroWilk(values);
+  if (swResult.error) {
+    return { p_value: null, is_normal: null, note: swResult.error };
+  }
 
   return {
     n: n,
     skewness: Number(skewness.toFixed(3)),
     excess_kurtosis: Number(excessKurtosis.toFixed(3)),
-    p_value: Number(pValue.toFixed(4)),
-    is_normal: pValue > 0.05
+    W_statistic: swResult.W,
+    p_value: Number(swResult.p.toFixed(4)),
+    is_normal: swResult.p > 0.05
   };
 }
 
@@ -2006,7 +2175,7 @@ const grafikUrl = generateBarChartUrl(chartLabels, chartValues, `${categoricalVa
   if (diffNormality.is_normal === null) {
     overrideNote = `Fark sayısı çok az olduğu için normallik güvenilir test edilemedi, ihtiyatlı olarak Wilcoxon testi uygulandı.`;
   } else if (finalTestType === 'wilcoxon') {
-    overrideNote = `Farkların normallik testi (Jarque-Bera p=${diffNormality.p_value}) normal dağılımı reddetti, bu yüzden Wilcoxon İşaretli Sıra Testi uygulandı.`;
+    overrideNote = `Farkların normallik testi (Shapiro-Wilk p=${diffNormality.p_value}) normal dağılımı reddetti, bu yüzden Wilcoxon İşaretli Sıra Testi uygulandı.`;
   }
 
   const result = finalTestType === 'paired-t-test' ? pairedTTest(pairs) : wilcoxonSignedRank(pairs);
