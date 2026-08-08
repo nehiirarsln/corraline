@@ -8,7 +8,7 @@ yükler, doğal dilde bir soru sorar (*"cinsiyete göre maliyet farklı mı?"*,
 *"bu 36 maddeden bir farkındalık endeksi oluştur, staj süresine göre bak"*
 gibi), sistem uygun istatistiksel testi seçer, varsayımlarını (normallik,
 varyans homojenliği) kontrol eder, gerçek formüllerle hesaplar ve APA
-formatında akademik bir rapor olarak geri döner.
+formatında akademik bir rapor olarak geri dönüt verir.
 
 ---
 
@@ -94,11 +94,11 @@ Kullanıcı sorusu + veri seti (CSV/XLSX)
 ```
 
 **Bu mimarinin en kritik özelliği:** LLM'lerin iki farklı görevi var ve
-ikisi de birbirinden bağımsız doğrulanabilir — biri "hangi test kategorisi
-uygun" (dilbilimsel/kavramsal bir karar), diğeri "bu sayıları düzgün
-cümlelere dök" (metin üretimi). İkisi de **asla** ham bir istatistiksel
-hesaplama yapmıyor. Bu repo'daki `corraline.js`, bu iki LLM çağrısı
-arasında oturan, tamamen deterministik köprü.
+ikisi de birbirinden bağımsız doğrulanabilir. Birincisi "hangi test kategorisi
+uygun", ikincisi "bu sayıları düzgün
+cümlelere dök". İkisi de **asla** ham bir istatistiksel
+hesaplama yapmaz. Bu repo'daki `corraline.js`, bu iki LLM çağrısı
+arasında oturan, tamamen deterministik bir köprüdür.
 
 ## Desteklenen Analizler
 
@@ -113,7 +113,7 @@ arasında oturan, tamamen deterministik köprü.
 | Varsayım Testleri | **Shapiro-Wilk** (normallik), Levene Testi/Brown-Forsythe (varyans homojenliği) |
 
 Her test seçimi, veri setindeki gerçek değişken tiplerine ve varsayım
-testi sonuçlarına göre otomatik olarak yapılır — kullanıcı ya da AI
+testi sonuçlarına göre otomatik olarak yapılır. Kullanıcı ya da AI
 Agent'ın "hangi testi kullanmalıyım" diye bilmesi gerekmez.
 
 ## Örnek Kullanım
@@ -150,14 +150,14 @@ içinde otomatik test olarak da doğrulanıyor.
 
 ## Geliştirme Süreci ve Karşılaşılan Zorluklar
 
-Bu proje tek seferde "doğru" yazılmadı. Gerçek veriler aracılığı ile sürekli test edilip,
+Bu proje tek seferde doğru yazılmadı. Gerçek veriler aracılığı ile sürekli SPSS ile test edilip,
 bulunan hatalar sistematik olarak düzeltildi. Bu sürecin en önemli
-kilometre taşları (tam commit geçmişi için `git log` çalıştırın):
+yapı taşları (tam commit geçmişi için `git log` çalıştırın):
 
 **1. Aralık-etiketli kategorik değişkenlerin sayı sanılması (kritik hata)**
-`parseFloat("0-6ay")` JavaScript'te sessizce `0` döndürür — string'in
-sadece başındaki rakamı okur, gerisini görmezden gelir. Bu yüzden "0-6 ay",
-"18-25 yaş" gibi aralık etiketli kategorik değişkenler yanlışlıkla sayısal
+`parseFloat("0-6ay")` JavaScript'te sessizce `0` döndürür string'in
+sadece başındaki rakamı okur, gerisini görmezden gelir.
+Bu yüzden "0-6 ay", "18-25 yaş" gibi aralık etiketli kategorik değişkenler yanlışlıkla sayısal
 sanılıyor, sistem bunları yanlış test ailesine (korelasyon/regresyon)
 yönlendiriyordu. Gerçek bir anket sorusuyla ("36 maddeden bir farkındalık
 endeksi oluştur, staj süresine göre bak") bu hata canlı olarak yakalandı;
