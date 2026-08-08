@@ -8,7 +8,7 @@ yükler, doğal dilde bir soru sorar (*"cinsiyete göre maliyet farklı mı?"*,
 *"bu 36 maddeden bir farkındalık endeksi oluştur, staj süresine göre bak"*
 gibi), sistem uygun istatistiksel testi seçer, varsayımlarını (normallik,
 varyans homojenliği) kontrol eder, gerçek formüllerle hesaplar ve APA
-formatında akademik bir rapor olarak geri dönüt verir.
+formatında akademik bir rapor olarak geri döner.
 
 ---
 
@@ -28,20 +28,18 @@ formatında akademik bir rapor olarak geri dönüt verir.
 
 ## Neden Bu Projeyi Geliştirdim
 
-Gözlemlediğim kadarıyla istatistiksel analiz genellikle iki uç arasında sıkışarak sorun yaşıyor:
-Ya SPSS gibi güçlü ama kullanımı deneyim gerektiren bir yazılıma hakim olmak gerekiyor,
+Gözlemlediğim süreç boyunca istatistiksel analizin genellikle iki uç arasında sıkışıp kaldığı sonucuna vardım. Analizi gerçekleştirebilmek için ya SPSS gibi güçlü ama kullanımı deneyim gerektiren bir yazılıma hakim olmak gerekiyor,
 ya da "hangi testi kullanmalıyım" sorusuna cevap bulmak için ayrı bir
-kaynağa (istatistikçi, ders kitabı, yapay zeka) başvurmak gerekiyor. Buna ek olarak
- büyük dil modellerinin (LLM) yükselişiyle birlikte "AI'a sor,
-o hesaplasın" yaklaşımı herkes için kolay ve hızlı görünüyor. Ama bu, ciddi bir problemi
-beraberinde getiriyor. Çünkü LLM'ler istatistiksel anlamdaki hesaplamaların hiçbirinde tamamen güvenilir
-değil. Bir p-değeri üretimi sağlayabilir, ancak bu değerin gerçek veriden
-doğru şekilde hesaplandığının ve yorumlandığının hiçbir garantisini veremezler.
+kaynağa (istatistikçi, ders kitabı, yapay zeka) başvurmaya ihtiyaç duyuluyor. Bunlara ek olarak aynı
+zamanda, büyük dil modellerinin (LLM) yükselişiyle birlikte "AI'a sor,
+o hesaplasın" yaklaşımı cazip, hızlı ve kolay olarak görünüyor ancak aslında bu durum, ciddi bir problemi de
+beraberinde getiriyor. Çünkü LLM'ler istatistiksel hesaplamalarda güvenilir
+bir kaynak olarak karşımıza çıkmıyor. LLM,'ler yardımı ile analiz ettiğimiz verilerin sonucunda bir p-değeri üretilebiliyor, ancak bu değerin gerçek veriden doğru ve varsayımlara yer vermeyecek şekilde hesaplandığının hiçbir garantisi olmuyor.
 
 Corraline, bu ikilemi şöyle çözmeyi hedefliyor: **LLM'i sadece anlama ve
 karar verme katmanında kullan, hesaplamayı asla ona bırakma.** Kullanıcının
 "cinsiyete göre maliyet farklı mı" sorusunu anlayıp bunun bir grup
-karşılaştırma sorusu olduğuna karar vermek LLM'in işi; ama t-testinin
+karşılaştırma sorusu olduğuna karar vermek LLM'in işi oluyor ancak bir t-testinin
 gerçekte yapılıp yapılmayacağına (yoksa varsayımlar ihlal edildiği için
 Mann-Whitney U'ya mı geçileceğine), ve o testin p-değerinin ne olduğuna
 tamamen deterministik, veriye dayalı bir kod katmanı karar veriyor. LLM'in
@@ -97,10 +95,10 @@ Kullanıcı sorusu + veri seti (CSV/XLSX)
 
 **Bu mimarinin en kritik özelliği:** LLM'lerin iki farklı görevi var ve
 ikisi de birbirinden bağımsız doğrulanabilir — biri "hangi test kategorisi
-uygun", diğeri "bu sayıları düzgün
-cümlelere dök" (metin üretimi). İkisi de asla ham bir istatistiksel
+uygun" (dilbilimsel/kavramsal bir karar), diğeri "bu sayıları düzgün
+cümlelere dök" (metin üretimi). İkisi de **asla** ham bir istatistiksel
 hesaplama yapmıyor. Bu repo'daki `corraline.js`, bu iki LLM çağrısı
-arasında oturan, tamamen deterministik bir köprü.
+arasında oturan, tamamen deterministik köprü.
 
 ## Desteklenen Analizler
 
@@ -115,7 +113,7 @@ arasında oturan, tamamen deterministik bir köprü.
 | Varsayım Testleri | **Shapiro-Wilk** (normallik), Levene Testi/Brown-Forsythe (varyans homojenliği) |
 
 Her test seçimi, veri setindeki gerçek değişken tiplerine ve varsayım
-testi sonuçlarına göre otomatik olarak yapılır. Kullanıcı ya da AI
+testi sonuçlarına göre otomatik olarak yapılır — kullanıcı ya da AI
 Agent'ın "hangi testi kullanmalıyım" diye bilmesi gerekmez.
 
 ## Örnek Kullanım
@@ -152,7 +150,7 @@ içinde otomatik test olarak da doğrulanıyor.
 
 ## Geliştirme Süreci ve Karşılaşılan Zorluklar
 
-Bu proje tek seferde "doğru" yazılmadı — gerçek veriyle sürekli test edilip,
+Bu proje tek seferde "doğru" yazılmadı. Gerçek veriler aracılığı ile sürekli test edilip,
 bulunan hatalar sistematik olarak düzeltildi. Bu sürecin en önemli
 kilometre taşları (tam commit geçmişi için `git log` çalıştırın):
 
@@ -168,24 +166,24 @@ olmasını zorunlu kılıyor.
 
 **2. AI'nin yanlış test önerisinin sorgusuz kabul edilmesi**
 Grup karşılaştırma, ki-kare ve eşleştirilmiş test dallarının hepsinde
-AI'nin önerisini veriye göre doğrulayan bir tip kontrolü varken,
-regresyon dalında bu kontrol unutulmuştu — AI "regresyon" dediği an,
+AI'ın önerisini veriye göre doğrulayan bir tip kontrolü varken,
+regresyon dalında bu kontrol unutulmuştu . AI "regresyon" dediği an,
 kategorik bir değişken olsa bile kod sorgusuz regresyona giriyordu. Bu,
 gerçek bir kullanıcı senaryosunda (ekran görüntüsüyle) yakalandı ve aynı
 tip-kontrolü mantığı regresyon dalına da eklendi.
 
 **3. Hata durumlarının tüm sistemi çökertmesi (en kritik bulgu)**
 Lojistik regresyon, çoklu regresyon ve ki-kare fonksiyonları, geçersiz
-girdi durumunda (`{error: "..."}`) bir hata objesi döndürüyordu — ama
+girdi durumunda (`{error: "..."}`) bir hata objesi döndürüyordu ama
 grafik oluşturma kodu bunu hiç kontrol etmeden `result.katsayilar.filter(...)`
-gibi çağrılar yapıyor, bu da **tüm n8n workflow'unun çökmesine** yol
+gibi çağrılar yapıyor, bu da tüm n8n workflow'unun çökmesine yol
 açıyordu (kullanıcıya hiçbir anlaşılır hata mesajı gitmeden). Üç noktada
 da artık `result.error` kontrolü var.
 
 **4. Jarque-Bera'nın Shapiro-Wilk kadar güçlü olmaması**
 Sistem başlangıçta normallik testi için Jarque-Bera kullanıyordu.
 Kullanıcının kendi SPSS pratiğinde (Shapiro-Wilk ile) her zaman
-"normal değil" bulduğu composite/Likert skorları, bizim sistemde
+"normal değil" bulduğu composite/Likert skorları, benim sistemimde
 Jarque-Bera ile bazen "normal" çıkıyordu — istatistiksel olarak bilinen
 bir güç farkı (Jarque-Bera, sınırlı/tavan-etkili dağılımlarda Shapiro-Wilk
 kadar hassas değildir). "Composite skorları hep nonparametrik say" gibi
@@ -206,7 +204,7 @@ testleri) izlenerek iki ayrı kök nedene indirgendi: (a) "Yorumum yok"
 yanıtının SPSS'te 0 yerine sistem-eksik değeri olarak kalması, (b) daha
 önceki bir kopyala-yapıştır hatasından kalma fazladan bir "hayalet" satır.
 Kullanıcı bunları SPSS tarafında düzelttikçe sonuç U=404.5'e (bizim
-sistemle aynı sonuca, p>.05) yaklaştı — iki sistemin de doğru
+sistemle aynı sonuca, p>.05) yaklaştı. İki sistemin de doğru
 çalıştığını, farkın veri hazırlama adımlarından kaynaklandığını kanıtladı.
 
 ## Test Paketi
@@ -216,7 +214,7 @@ npm install
 npm test
 ```
 
-32 otomatik test, dört kategoriye ayrılıyor:
+40 otomatik test, beş kategoriye ayrılıyor:
 
 - **`shapiroWilk.test.js`** — Shapiro-Wilk implementasyonunun
   `scipy.stats.shapiro` ile 14 farklı senaryoda (n=3 → n=1000) 6 ondalık
@@ -232,6 +230,13 @@ npm test
 - **`integration.test.js`** — gerçek bir anket (n=160) ve gerçek bir
   klinik veri setiyle (n=1010), SPSS ve scipy'ye karşı doğrulanmış
   senaryoları uçtan uca çalıştırır.
+- **`crossValidation.test.js`** — daha önce sadece SPSS ile karşılaştırılmış
+  fonksiyonları (Mann-Whitney U, Kruskal-Wallis, Wilcoxon, tek yönlü ANOVA,
+  Pearson/Spearman, ki-kare, çoklu regresyon, lojistik regresyon)
+  `scipy.stats`, `numpy.linalg.lstsq` ve `sklearn.LogisticRegression`'a
+  karşı bağımsız olarak test eder. Bu süreçte Kruskal-Wallis'te eksik olan
+  bağlı-değer (tie) düzeltme faktörü bulunup düzeltildi — bu dosya o
+  düzeltmenin kalıcı korumasıdır.
 
 ## Kaynaklar
 
@@ -248,10 +253,9 @@ npm test
 Bu projeyi geliştirirken karşılaşılan ve bilinçli olarak "çözülmemiş"
 bırakılan noktalar:
 
-- **Değişken/sütun adı eşleştirmesi**, AI'nin ürettiği serbest metnin
-  veri setindeki gerçek sütun adlarıyla (fuzzy substring match)
-  örtüşmesine dayanır. AI bir sütunu tamamen farklı bir kelimeyle
-  tarif ederse eşleşme başarısız olabilir — bu durumda sistem anlaşılır
+- **Değişken/sütun adı eşleştirmesi**, AI'ın ürettiği serbest metnin
+  veri setindeki gerçek sütun adlarıyla örtüşmesine dayanır. AI bir sütunu tamamen farklı bir kelimeyle
+  tarif ederse eşleşme başarısız olabilir. Bu durumda sistem anlaşılır
   bir hata döner, yanlış bir sütunla sessizce devam etmez.
 - **Ters kodlanan bir ölçeğin teorik min/max aralığı**, sadece
   Likert-sözlüğünden dönüştürülen sütunlar için kesin olarak bilinir;
@@ -268,7 +272,7 @@ bırakılan noktalar:
   katmanının aksine, üretilen doğal dil metninin birebir doğruluğu
   için matematiksel bir garanti yoktur (bu yüzden proje, üretilen her
   raporun sayılarını orijinal JSON çıktısıyla karşılaştırmayı önerir).
-- **Otomatik test paketi bu oturumda eklendi**, ama proje boyunca
+- Otomatik test paketi bu oturumda eklendi, ama proje boyunca
   yapılan tüm el ile doğrulamaların (özellikle SPSS karşılaştırmaları)
   kalıcı, tekrar çalıştırılabilir testlere dönüştürülmesi devam eden
   bir süreç.
