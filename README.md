@@ -8,7 +8,7 @@ yükler, doğal dilde bir soru sorar (*"cinsiyete göre maliyet farklı mı?"*,
 *"bu 36 maddeden bir farkındalık endeksi oluştur, staj süresine göre bak"*
 gibi), sistem uygun istatistiksel testi seçer, varsayımlarını (normallik,
 varyans homojenliği) kontrol eder, gerçek formüllerle hesaplar ve APA
-formatında akademik bir rapor olarak geri döner.
+formatında akademik bir rapor olarak geri dönüt verir.
 
 ---
 
@@ -28,15 +28,15 @@ formatında akademik bir rapor olarak geri döner.
 
 ## Neden Bu Projeyi Geliştirdim
 
-İstatistiksel analiz genellikle iki uç arasında sıkışıyor: ya SPSS gibi
-güçlü ama kullanımı deneyim gerektiren bir yazılıma hakim olmak gerekiyor,
+Gözlemlediğim kadarıyla istatistiksel analiz genellikle iki uç arasında sıkışarak sorun yaşıyor:
+Ya SPSS gibi güçlü ama kullanımı deneyim gerektiren bir yazılıma hakim olmak gerekiyor,
 ya da "hangi testi kullanmalıyım" sorusuna cevap bulmak için ayrı bir
-kaynağa (istatistikçi, ders kitabı, forum) başvurmak gerekiyor. Aynı
-zamanda, büyük dil modellerinin (LLM) yükselişiyle birlikte "AI'ye sor,
-o hesaplasın" yaklaşımı cazip görünüyor — ama bu, ciddi bir problemi
-beraberinde getiriyor: **LLM'ler istatistiksel hesaplamada güvenilir
-değil.** Bir p-değerini "üretebilirler", ama bu değerin gerçek veriden
-doğru şekilde hesaplandığının hiçbir garantisi yoktur.
+kaynağa (istatistikçi, ders kitabı, yapay zeka) başvurmak gerekiyor. Buna ek olarak
+ büyük dil modellerinin (LLM) yükselişiyle birlikte "AI'a sor,
+o hesaplasın" yaklaşımı herkes için kolay ve hızlı görünüyor. Ama bu, ciddi bir problemi
+beraberinde getiriyor. Çünkü LLM'ler istatistiksel anlamdaki hesaplamaların hiçbirinde tamamen güvenilir
+değil. Bir p-değeri üretimi sağlayabilir, ancak bu değerin gerçek veriden
+doğru şekilde hesaplandığının ve yorumlandığının hiçbir garantisini veremezler.
 
 Corraline, bu ikilemi şöyle çözmeyi hedefliyor: **LLM'i sadece anlama ve
 karar verme katmanında kullan, hesaplamayı asla ona bırakma.** Kullanıcının
@@ -97,10 +97,10 @@ Kullanıcı sorusu + veri seti (CSV/XLSX)
 
 **Bu mimarinin en kritik özelliği:** LLM'lerin iki farklı görevi var ve
 ikisi de birbirinden bağımsız doğrulanabilir — biri "hangi test kategorisi
-uygun" (dilbilimsel/kavramsal bir karar), diğeri "bu sayıları düzgün
-cümlelere dök" (metin üretimi). İkisi de **asla** ham bir istatistiksel
+uygun", diğeri "bu sayıları düzgün
+cümlelere dök" (metin üretimi). İkisi de asla ham bir istatistiksel
 hesaplama yapmıyor. Bu repo'daki `corraline.js`, bu iki LLM çağrısı
-arasında oturan, tamamen deterministik köprü.
+arasında oturan, tamamen deterministik bir köprü.
 
 ## Desteklenen Analizler
 
@@ -115,7 +115,7 @@ arasında oturan, tamamen deterministik köprü.
 | Varsayım Testleri | **Shapiro-Wilk** (normallik), Levene Testi/Brown-Forsythe (varyans homojenliği) |
 
 Her test seçimi, veri setindeki gerçek değişken tiplerine ve varsayım
-testi sonuçlarına göre otomatik olarak yapılır — kullanıcı ya da AI
+testi sonuçlarına göre otomatik olarak yapılır. Kullanıcı ya da AI
 Agent'ın "hangi testi kullanmalıyım" diye bilmesi gerekmez.
 
 ## Örnek Kullanım
@@ -273,6 +273,16 @@ bırakılan noktalar:
   kalıcı, tekrar çalıştırılabilir testlere dönüştürülmesi devam eden
   bir süreç.
 
+## n8n Workflow'unu İçe Aktarma
+
+Bu sistemin çalışan tam n8n workflow'u (`docs/n8n-workflow.json`) da bu
+repoda mevcut. Kendi n8n hesabınıza şu şekilde import edebilirsiniz:
+
+1. n8n'de **Workflows → Import from File** (veya sağ üstteki ⋯ menüsü)
+2. `docs/n8n-workflow.json` dosyasını seçin
+3. Google Gemini node'larına kendi API anahtarınızla bir credential bağlayın
+   (workflow, güvenlik nedeniyle hiçbir API anahtarı içermez)
+   
 ## Kurulum
 
 Bu, bağımsız bir uygulama değil — bir **n8n Code node** içinde
